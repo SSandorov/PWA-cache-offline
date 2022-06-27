@@ -5,9 +5,13 @@ self.addEventListener('install', e => {
     const cacheShell = caches.open('cache-shell')
         .then( cache => {
             return cache.addAll([
-                '/index2.html',
+                // es importante de añadir esta primera ruta, ya que el usuario puede
+                // acceder a la página web a través de la ruta normal o desde el
+                // index.html
+                '/',
+                '/index.html',
                 '/css/style.css',
-                '/img/main-jpg',
+                '/img/main.jpg',
                 '/js/app.js',
                 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
             ]);
@@ -21,3 +25,33 @@ self.addEventListener('install', e => {
     // instalar antes de que se active
     e.waitUntil(cacheShell);
 });
+
+
+// Ahora vamos a mostrar las distintas estrategias del caché que podemos emplear dependiendo
+// de las necesidades de nuestro proyecto
+
+
+self.addEventListener('fetch', e => {
+    /*
+    En primer lugar tenemos la estrategia del cache only
+
+    Es una estrategia en la que todo el contenido de nuestra aplicación la guardamos en memoria
+    y nunca volvemos a pedirla del servidor
+
+    El inconveniente es que los archivos nunca se actualizan porque nunca pasan por el
+    servidor, siempre se recuperan desde el SW, por lo que la única manera de actualizar
+    los archivos es actualizando el SW
+    */
+    // e.respondWith(
+        // el caches lo componen todos los elementos del caché del dominio en el que nos 
+        // encontramos
+    //     caches.match( e.request )
+    // );
+
+    /*
+    En segundo lugar tenemos la estrategia del cache with network fallback
+
+    Es una estrategia que primero comprueba si tenemos el archivo guardado en el caché,
+    pero si este no lo está, lo busca en
+    */
+})

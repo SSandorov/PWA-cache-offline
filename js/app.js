@@ -61,7 +61,7 @@ lugar
                 // })
             // con este código, cada vez que haya un nuevo archivo, lo podemos reemplazar
             // por el viego, y así mantenemos la página actualizada
-            ;
+            // ;
             // Si lo que quiero es mostrar uno de los elementos en consola
             // cache.match('/index.html')
             //     .then(res => {
