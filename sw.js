@@ -1,70 +1,23 @@
-// 
-self.addEventListener('fetch', event => {
-    // Escribimos la variable que maneja el .catch(). 
-
-    // Para el primer ejemplo pondremos un texto plano, pero podría ser todo lo que el 
-    // SW haya almacenado en el caché del navegador
-    // const offlineResp = new Response(`
-        // Bienvenido a mi página web
-
-        // Disculpa, pero para usarla, necesitas internet
-    // `);
-    // Para el segundo ejemplo vamos a crear una respuesta más elaborada sólo con HTML
-    // esta respuesta no puede hacer peticiones, por lo que no podemos referenciar
-    // el bootstrap, el css, las imágenes u otros archivos
-    // Debemos añadir unos headers para que el navegador interprete esta respuesta
-    // como un archivo html y no un texto plano
-    // const offlineResp = new Response(`
-    //     <!DOCTYPE html>
-    //     <html lang="en">
-    //     <head>
-    //         <meta charset="UTF-8">
-    //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    //         <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    //         <title>Mi PWA</title>
-    //     </head>
-    //     <body class="container p-3">
-    //         
-    //         <h1>Offline Mode</h1>
-    //         <hr>
-    //     
-    //         <p>
-    //             Las PWAs son el siguiente paso a las páginas y aplicaciones web.
-    //         </p>
-    //         <p>
-    //             Cargan sumamente rápido y no necesitan conexión a internet para trabajar
-    //         </p>
-    //     
-    //     </body>
-    //     </html>
-    // `, 
-    // {
-    //     headers: {
-    //         'Content-Type':'text/html'
-    //     }
-    // });
-
-    // Como tercer ejemplo, vamos a separar el HTML en otro documento. Es una buena 
-    // práctica tenerlo separado en un documento HTML y no en JS
-    const offlineResp = 1;
-
-    // Por cada petición fetch, quiero que el sw me devuelva el conenido de la petición
-    const resp = fetch(event.request)
-    /*
-    Cuando el usuario no tenga conexión a internet las peticiones HTTP no podrán ser 
-    recogidas. Es por ello que debemos emplear el .catch() de la petición para manejar
-    qué hacer cuando no haya conexión a internet
-    */
-        .catch(() => {
-            // Como no hay conexión a internet, debemos regresar las peticiones almacenadas
-            // en el caché del navegador
-            return offlineResp;
-        });
-
-    /*
-    Como el retorno del .catch() es una instancia de la clase Response(), el 
-    respondWith() nos devolverá el valor del .catch()
-    */
-    event.respondWith(resp);
+// El app shell son aquellos archivos que nuestra página web necesita si o si para
+// funcionar. Como el propio nombre indica, es el cascarón de nuestro programa
+// El app shell se añade a la memoria en el momento de la instalación
+self.addEventListener('install', e => {
+    const cacheShell = caches.open('cache-shell')
+        .then( cache => {
+            return cache.addAll([
+                '/index2.html',
+                '/css/style.css',
+                '/img/main-jpg',
+                '/js/app.js',
+                'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
+            ]);
+        } )
+        // en caso de que uno de los archivos no los encuentre, la instalación dará un error
+        // poco informativo, por lo que es importante pillar el error y devolver una respuesta
+        // personalizada
+        .catch(console.log);
+    
+    // Como la instalación es muy rápida, debemos emplear el waitUntil() para que se pueda
+    // instalar antes de que se active
+    e.waitUntil(cacheShell);
 });
-
