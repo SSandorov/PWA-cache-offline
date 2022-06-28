@@ -1,8 +1,10 @@
 /*
 Optimizar el caché es muy importante. Para hacerlo organizamos el caché en tres elementos
     - Estática: app shell
-    - Dinámica:
+    - Dinámica: peticiones que cambian con el tiempo
     - Inmutable: p.e. la librería de bootstrap, ya que una versión nunca cambia
+El caché dinámico se elimina periódicamente para que no se guarden demasiadas cosas en 
+memoria
 */
 const CACHE_STATIC_NAME = 'static-v1';
 const CACHE_DYNAMIC_NAME = 'dynamic-v1';
@@ -22,18 +24,26 @@ self.addEventListener('install', e => {
                 '/index.html',
                 '/css/style.css',
                 '/img/main.jpg',
-                '/js/app.js',
-                'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
+                '/js/app.js'
             ]);
         } )
         // en caso de que uno de los archivos no los encuentre, la instalación dará un error
         // poco informativo, por lo que es importante pillar el error y devolver una respuesta
         // personalizada
         .catch(console.log);
+
+    // Añadimos el caché inmutable con la librería de bootstrap
+    const cacheInm = caches.open(CACHE_INMUTABLE_NAME)
+        .then(cache => {
+            return cache.addAll([
+                'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
+            ]);
+        })
+        .catch(console.log);
     
     // Como la instalación es muy rápida, debemos emplear el waitUntil() para que se pueda
     // instalar antes de que se active
-    e.waitUntil(cacheShell);
+    e.waitUntil(Promise.all([cacheShell, cacheInm]));
 });
 
 
