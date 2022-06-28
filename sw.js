@@ -6,9 +6,31 @@ Optimizar el caché es muy importante. Para hacerlo organizamos el caché en tre
 El caché dinámico se elimina periódicamente para que no se guarden demasiadas cosas en 
 memoria
 */
-const CACHE_STATIC_NAME = 'static-v1';
+const CACHE_STATIC_NAME = 'static-v2';
 const CACHE_DYNAMIC_NAME = 'dynamic-v1';
 const CACHE_INMUTABLE_NAME = 'inmutable-v1';
+
+// Vamos a configurar el caché dinámico, para que no crezca demasiado
+const limpiarCache = (cacheNombre, nElementos) => {
+    // encuentra el caché
+    caches.open(cacheNombre)
+        // selecciona el cache
+        .then(cache => {
+        // nos devuelve los elementos del cache
+            return cache.keys()
+                .then(keys => {
+                    // si hay más elementos de los que permito elimínalos
+                    if ( keys.length >= nElementos ) {
+                        cache.delete(keys[0])
+                            /*
+                            Para poder reiterar en el caché, volvemos a llamar la
+                            función para que aplique los mismos criterios
+                            */
+                            .then(limpiarCache(cacheNombre, nElementos));
+                    }
+                });
+        });
+}
 
 // El app shell son aquellos archivos que nuestra página web necesita si o si para
 // funcionar. Como el propio nombre indica, es el cascarón de nuestro programa
@@ -99,8 +121,11 @@ self.addEventListener('fetch', e => {
                     caches.open(CACHE_DYNAMIC_NAME)
                         .then(cache => {
                             // añadimos la petición como elemento del caché
-                            
                             cache.put(e.request, res);
+
+
+                            // añadimos la función para limpiar el cache
+                            limpiarCache(CACHE_DYNAMIC_NAME, 3);
                         });
                     // debido a algún fallo en la nueva versión de las promesas, como el res
                     // lo repetimos dos veces, algo falla. Pero clonando la respuesta lo
