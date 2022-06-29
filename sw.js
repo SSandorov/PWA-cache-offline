@@ -10,6 +10,9 @@ const CACHE_STATIC_NAME = 'static-v2';
 const CACHE_DYNAMIC_NAME = 'dynamic-v1';
 const CACHE_INMUTABLE_NAME = 'inmutable-v1';
 
+// Variable que almacena el límite de elementos en el caché
+const CACHE_DYNAMIC_LIMIT = 50;
+
 // Vamos a configurar el caché dinámico, para que no crezca demasiado
 const limpiarCache = (cacheNombre, nElementos) => {
     // encuentra el caché
@@ -101,6 +104,7 @@ self.addEventListener('fetch', e => {
 
     Este inconveniente se soluciona optimizando el caché
     */
+    /* 
     const estCache2 = caches.match(e.request)
         .then(res => {
             // Como no podemos manejar los 404 con el .catch() debemos comprobar si la 
@@ -125,7 +129,7 @@ self.addEventListener('fetch', e => {
 
 
                             // añadimos la función para limpiar el cache
-                            limpiarCache(CACHE_DYNAMIC_NAME, 3);
+                            limpiarCache(CACHE_DYNAMIC_NAME, CACHE_DYNAMIC_LIMIT);
                         });
                     // debido a algún fallo en la nueva versión de las promesas, como el res
                     // lo repetimos dos veces, algo falla. Pero clonando la respuesta lo
@@ -137,5 +141,46 @@ self.addEventListener('fetch', e => {
 
         });
 
-    e.respondWith(estCache2);
+    e.respondWith(estCache2); 
+    */
+    /*
+    En tercer lugar tenemos la estrategia network with caché fallback
+
+    En esta estrategia primero hacemos la petición a internet, sino se puede o no se
+    encuentra el archivo, lo buscamos en el caché
+
+    Los inconvenientes son que siempre va a hacer la petición a internet, por lo que 
+    cada vez que el usuario abra la app con conexión a internet en el dispositivo,
+    consumirá megas. Al mismo tiempo vuelve la página web más lenta que en la segunda
+    estrategia
+    */
+    const estCache3 = fetch(e.request)
+
+        .then(res => {
+
+            // en caso de que la petición no pueda encontrarse al ser un 404
+            // eso es el caso en el que está mal escrita la ruta
+            // tal cual como está escrito, no soluciona mucho, pero si 
+            // añadiésemos una imagen o un texto estándar quedaría mejor
+            if(!res) return caches.match(e.request);
+
+            console.log('Fetch', res);
+            // almacenamos la respuesta en memoria
+            caches.open(CACHE_DYNAMIC_NAME)
+                .then(cache => {
+                    cache.put(e.request, res);
+                    // mantenemos el caché dinámico limitado
+                    limpiarCache(CACHE_DYNAMIC_NAME, CACHE_DYNAMIC_LIMIT);
+                });
+            // devolvemos un clon de la respuesta, ya que ne primer lugar la almacenamos
+            // en memoria
+            return res.clone();
+        })
+            // manejamos la posibilidad de que no haya conexión a interet, para que 
+            // no nos de error
+            .catch(err => {
+                return caches.match(e.request);
+            });
+
+    e.respondWith(estCache3);
 })
