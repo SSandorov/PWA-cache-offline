@@ -154,6 +154,7 @@ self.addEventListener('fetch', e => {
     consumirá megas. Al mismo tiempo vuelve la página web más lenta que en la segunda
     estrategia
     */
+    /* 
     const estCache3 = fetch(e.request)
 
         .then(res => {
@@ -182,5 +183,42 @@ self.addEventListener('fetch', e => {
                 return caches.match(e.request);
             });
 
-    e.respondWith(estCache3);
+    e.respondWith(estCache3); 
+    */
+    /*
+    En cuarto lugar tenemos la estrategia cache with network update
+
+    Esta estrategia está diseñada para emplearla cuando el rendimiento es fundamental
+    
+    Es importante entender que las actualizaciones de nuestra página primero se 
+    guardarán en la memoria, y no se reflejarán en la aplicación hasta que el usuario
+    entre por segunda vez, por lo que siempre verán la versión anterior
+    */
+
+    // con esta estrategia sólo devolvemos el cache estático, por lo que podemos
+    // manejar las otras peticiones con un condicional
+    if ( e.request.url.includes('bootstrap') ) {
+        // si la petición incluye 'bootstrap' devuelve la petición del cache en el
+        // que se encuentre
+        return e.respondWith( caches.match(e.request) );
+    }
+
+    // busca y abre el caché estático
+    const estCache4 = caches.open(CACHE_STATIC_NAME)
+            // abrimos el caché estático
+            .then(cache => {
+                // En caso de que la petición no se encuentre en memoria, o esté
+                // una nueva versión, la añadimos en la memoria
+                fetch(e.request)
+                    .then(res => {
+                        cache.put(e.request, res);
+                    })
+                // y retornamos el elemento que coincide con la petición
+                return cache.match(e.request);
+
+                // la versión retornada será la versión antigua, la siguiente vez
+                // que el usuario abra la aplicación verá la nueva versión
+            });
+
+    e.respondWith(estCache4);
 })
