@@ -6,7 +6,7 @@ Optimizar el caché es muy importante. Para hacerlo organizamos el caché en tre
 El caché dinámico se elimina periódicamente para que no se guarden demasiadas cosas en 
 memoria
 */
-const CACHE_STATIC_NAME = 'static-v2';
+const CACHE_STATIC_NAME = 'static-v3';
 const CACHE_DYNAMIC_NAME = 'dynamic-v1';
 const CACHE_INMUTABLE_NAME = 'inmutable-v1';
 
@@ -49,6 +49,7 @@ self.addEventListener('install', e => {
                 '/index.html',
                 '/css/style.css',
                 '/img/main.jpg',
+                '/img/no-img.jpg',
                 '/js/app.js'
             ]);
         } )
@@ -197,6 +198,7 @@ self.addEventListener('fetch', e => {
 
     // con esta estrategia sólo devolvemos el cache estático, por lo que podemos
     // manejar las otras peticiones con un condicional
+    /* 
     if ( e.request.url.includes('bootstrap') ) {
         // si la petición incluye 'bootstrap' devuelve la petición del cache en el
         // que se encuentre
@@ -220,5 +222,49 @@ self.addEventListener('fetch', e => {
                 // que el usuario abra la aplicación verá la nueva versión
             });
 
-    e.respondWith(estCache4);
+    e.respondWith(estCache4); 
+    */
+
+    /* 
+    En quinto lugar tenemos la estrategia cache & network race
+
+    Como el propio nombre indica, es una carrera en para ver cual de los dos devuelve
+    la infomación más rápido
+    */
+    const estCache5 = new Promise((resolve, reject) => {
+
+        let rechazada = false;
+        const falloUnaVez = () => {
+            if (rechazada) {
+                // si entra aquí es que no existe ni en el caché ni en internet
+                // evaluamos si es una imagen y sin importar la capitalización
+                // con una expresión regular
+
+                if (/\.(png|jpg)$/i.test(e.request.url)) {
+                    resolve(caches.match('/img/no-img.jpg'));
+                } else {
+                    reject('No se encontró respuesta');
+                }
+            // Podríamos añadir más condiciones dependiendo del tipo de archivo
+            } else {
+                rechazada = true;
+            }
+        }
+        // petición a internet
+        fetch(e.request)
+            .then(res => {
+                res.ok ? resolve(res) : falloUnaVez();
+            })
+            // el .catch nos maneja la situación del 404 y la desconexión de internet
+            .catch(falloUnaVez);
+        // recuperar la petición del caché
+        caches.match(e.request)
+            .then(res => {
+                res ? resolve(res) : falloUnaVez();
+            })
+            .catch(falloUnaVez);
+
+    });
+
+    e.respondWith(estCache5);
 })
